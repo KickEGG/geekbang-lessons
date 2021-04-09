@@ -31,6 +31,7 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -118,6 +119,23 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
         throw new UnsupportedOperationException("This feature will be supported in the future");
     }
 
+//    @Override
+//    public void put(K key, V value) {
+//        assertNotClosed();
+//        assertNotNull(key, "key");
+//        assertNotNull(value, "value");
+//        try {
+//            V oldValue = doPut(key, value);
+//            if (oldValue == null) {
+//                publishCreatedEvent(key, value);
+//            } else {
+//                publishUpdatedEvent(key, oldValue, value);
+//            }
+//        } finally {
+//            writeIfWriteThrough(key, value);
+//        }
+//    }
+
     @Override
     public void put(K key, V value) {
         assertNotClosed();
@@ -130,6 +148,8 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
             } else {
                 publishUpdatedEvent(key, oldValue, value);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             writeIfWriteThrough(key, value);
         }
@@ -151,7 +171,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      * previously associated <tt>null</tt> with <tt>key</tt>,
      * if the implementation supports <tt>null</tt> values.)
      */
-    protected abstract V doPut(K key, V value) throws CacheException, ClassCastException;
+    protected abstract V doPut(K key, V value) throws CacheException, ClassCastException, IOException;
 
     @Override
     public V getAndPut(K key, V value) {

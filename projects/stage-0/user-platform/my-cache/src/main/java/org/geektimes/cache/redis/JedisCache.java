@@ -1,13 +1,18 @@
 package org.geektimes.cache.redis;
 
 import org.geektimes.cache.AbstractCache;
+import org.geektimes.cache.serialization.json.JsonSerialization;
 import redis.clients.jedis.Jedis;
 
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
 import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Iterator;
+import java.util.List;
 
 public class JedisCache<K extends Serializable, V extends Serializable> extends AbstractCache<K, V> {
 
@@ -19,30 +24,98 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
         this.jedis = jedis;
     }
 
+//    @Override
+//    protected V doGet(K key) throws CacheException, ClassCastException {
+//        byte[] keyBytes = serialize(key);
+//        return doGet(keyBytes);
+//    }
+
+//    @Override
+//    protected V doGet(K key) throws CacheException, ClassCastException {
+//        byte[] keyBytes = serialize(key);
+//        return doGet(keyBytes);
+//    }
+
     @Override
     protected V doGet(K key) throws CacheException, ClassCastException {
-        byte[] keyBytes = serialize(key);
-        return doGet(keyBytes);
+        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(key));
+        byte[] jsonKey = null;
+        try {
+            jsonKey = jsonSerialization.serialize(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return doGet(jsonKey);
     }
 
-    protected V doGet(byte[] keyBytes) {
-        byte[] valueBytes = jedis.get(keyBytes);
-        V value = deserialize(valueBytes);
+    protected V doGet(byte[] jsonKey) {
+        byte[] valueBytes = jedis.get(jsonKey);
+        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(valueBytes));
+        V value = (V) jsonSerialization.deserialize(valueBytes);
         return value;
     }
 
+//    protected V doGet(byte[] keyBytes) {
+//        byte[] valueBytes = jedis.get(keyBytes);
+//        V value = deserialize(valueBytes);
+//        return value;
+//    }
+
+//    @Override
+//    protected V doPut(K key, V value) throws CacheException, ClassCastException {
+//
+//        JsonSerialization jsonSerialization = new JsonSerialization();
+//        byte[] keyBytes = jsonSerialization.serialize(key);
+//        byte[] valueBytes = serialize(value);
+//        V oldValue = doGet(keyBytes);
+//        jedis.set(keyBytes, valueBytes);
+//        return oldValue;
+//    }
+
     @Override
-    protected V doPut(K key, V value) throws CacheException, ClassCastException {
-        byte[] keyBytes = serialize(key);
-        byte[] valueBytes = serialize(value);
-        V oldValue = doGet(keyBytes);
-        jedis.set(keyBytes, valueBytes);
+    protected V doPut(K key, V value) throws CacheException, ClassCastException, IOException {
+
+        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(key));
+//        K jsonKey = (K) jsonSerialization.serialize(key);
+
+        JsonSerialization jsonSerialization2 = new JsonSerialization(getClassType(value));
+//        V jsonValue = (V) jsonSerialization2.serialize(value);
+        V oldValue = doGet(jsonSerialization.serialize(key));
+        jedis.set(jsonSerialization.serialize(key), jsonSerialization2.serialize(value));
         return oldValue;
+    }
+
+
+//    protected V doGet(String jsonKey) {
+//        String jsonValue = jedis.get(jsonKey);
+//        JsonSerialization jsonSerialization = new JsonSerialization();
+//        V value = null;
+//
+//        try {
+//            value = (V) jsonSerialization.deserialize(jsonValue);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return value;
+//    }
+
+    private Class getClassType(Object object) {
+        Type type = object.getClass().getGenericSuperclass(); // generic 泛型
+        if (type instanceof ParameterizedType) {
+            // 强制转化“参数化类型”
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            // 参数化类型中可能有多个泛型参数
+            Type[] types = parameterizedType.getActualTypeArguments();
+            // 获取数据的第一个元素(User.class)
+            return (Class<K>) types[0];
+        }
+        return null;
     }
 
     @Override
     protected V doRemove(K key) throws CacheException, ClassCastException {
-        byte[] keyBytes = serialize(key);
+        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(key));
+        byte[] keyBytes =jsonSerialization.serialize(key);
         V oldValue = doGet(keyBytes);
         jedis.del(keyBytes);
         return oldValue;
@@ -63,7 +136,7 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
         this.jedis.close();
     }
 
-    // 是否可以抽象出一套序列化和反序列化的 API
+    // TODO 是否可以抽象出一套序列化和反序列化的 API
     private byte[] serialize(Object value) throws CacheException {
         byte[] bytes = null;
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
