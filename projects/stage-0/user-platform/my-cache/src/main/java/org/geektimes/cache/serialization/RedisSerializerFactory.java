@@ -1,7 +1,5 @@
 package org.geektimes.cache.serialization;
 
-import org.geektimes.cache.serialization.json.JsonSerialization;
-
 import java.util.Iterator;
 import java.util.ServiceLoader;
 

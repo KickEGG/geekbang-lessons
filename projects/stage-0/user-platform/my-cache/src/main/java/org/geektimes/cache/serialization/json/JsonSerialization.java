@@ -5,15 +5,13 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.sun.xml.internal.ws.encoding.soap.SerializationException;
 import org.geektimes.cache.serialization.RedisSerializer;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.nio.charset.Charset;
 
 /**
  * @author KickEGG
  * @createTime 2021-04-09 8:30 下午
- * @description 源与redisTemplate实现
- * @keyPoint  org.geektimes.cache.serialization.json.RedisSerializer
+ * @description 参考redisTemplate实现
+ * @keyPoint  org.geektimes.cache.serialization.RedisSerializer
  */
 public class JsonSerialization<T> implements RedisSerializer<T> {
 
@@ -23,6 +21,10 @@ public class JsonSerialization<T> implements RedisSerializer<T> {
     public JsonSerialization(Class<T> clazz) {
         super();
         this.clazz = clazz;
+    }
+
+    public JsonSerialization() {
+        super();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package org.geektimes.cache.redis;
+package org.geektimes.cache.redis.jedis;
 
 import org.geektimes.cache.AbstractCacheManager;
 import redis.clients.jedis.Jedis;

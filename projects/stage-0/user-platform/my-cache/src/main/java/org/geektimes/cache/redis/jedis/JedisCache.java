@@ -1,20 +1,17 @@
-package org.geektimes.cache.redis;
+package org.geektimes.cache.redis.jedis;
 
 import org.geektimes.cache.AbstractCache;
 import org.geektimes.cache.serialization.RedisSerializer;
 import org.geektimes.cache.serialization.RedisSerializerFactory;
-import org.geektimes.cache.serialization.json.JsonSerialization;
 import redis.clients.jedis.Jedis;
 
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Iterator;
-import java.util.List;
 
 public class JedisCache<K extends Serializable, V extends Serializable> extends AbstractCache<K, V> {
 
