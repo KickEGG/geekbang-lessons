@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNull;
 public class CachingTest {
 
     @Test
-    public void testSampleInMemory() {
+    public void testlLettuceSampleInMemory() {
         CachingProvider cachingProvider = Caching.getCachingProvider();
         CacheManager cacheManager = cachingProvider.getCacheManager(URI.create("in-memory://localhost/"), null);
         // configure the cache
@@ -73,6 +73,36 @@ public class CachingTest {
         cache.remove(key);
         assertNull(cache.get(key));
     }
+
+//    @Test
+//    public void testSampleInMemory() {
+//        CachingProvider cachingProvider = Caching.getCachingProvider();
+//        CacheManager cacheManager = cachingProvider.getCacheManager(URI.create("in-memory://localhost/"), null);
+//        // configure the cache
+//        MutableConfiguration<String, Integer> config =
+//                new MutableConfiguration<String, Integer>()
+//                        .setTypes(String.class, Integer.class);
+//
+//        // create the cache
+//        Cache<String, Integer> cache = cacheManager.createCache("simpleCache", config);
+//
+//        // add listener
+//        cache.registerCacheEntryListener(cacheEntryListenerConfiguration(new TestCacheEntryListener<>()));
+//
+//        // cache operations
+//        String key = "key";
+//        Integer value1 = 1;
+//        cache.put("key", value1);
+//
+//        // update
+//        value1 = 2;
+//        cache.put("key", value1);
+//
+//        Integer value2 = cache.get(key);
+//        assertEquals(value1, value2);
+//        cache.remove(key);
+//        assertNull(cache.get(key));
+//    }
 
     @Test
     public void testSampleRedis() {
