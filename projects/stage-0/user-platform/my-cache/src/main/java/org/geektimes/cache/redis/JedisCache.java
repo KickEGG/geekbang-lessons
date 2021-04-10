@@ -1,6 +1,8 @@
 package org.geektimes.cache.redis;
 
 import org.geektimes.cache.AbstractCache;
+import org.geektimes.cache.serialization.RedisSerializer;
+import org.geektimes.cache.serialization.RedisSerializerFactory;
 import org.geektimes.cache.serialization.json.JsonSerialization;
 import redis.clients.jedis.Jedis;
 
@@ -17,6 +19,8 @@ import java.util.List;
 public class JedisCache<K extends Serializable, V extends Serializable> extends AbstractCache<K, V> {
 
     private final Jedis jedis;
+
+    private final RedisSerializer redisSerializer = RedisSerializerFactory.getRedisSerializer();
 
     public JedisCache(CacheManager cacheManager, String cacheName,
                       Configuration<K, V> configuration, Jedis jedis) {
@@ -38,10 +42,9 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
 
     @Override
     protected V doGet(K key) throws CacheException, ClassCastException {
-        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(key));
         byte[] jsonKey = null;
         try {
-            jsonKey = jsonSerialization.serialize(key);
+            jsonKey = redisSerializer.serialize(key);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -50,8 +53,7 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
 
     protected V doGet(byte[] jsonKey) {
         byte[] valueBytes = jedis.get(jsonKey);
-        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(valueBytes));
-        V value = (V) jsonSerialization.deserialize(valueBytes);
+        V value = (V) redisSerializer.deserialize(valueBytes);
         return value;
     }
 
@@ -74,14 +76,9 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
 
     @Override
     protected V doPut(K key, V value) throws CacheException, ClassCastException, IOException {
-
-        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(key));
-//        K jsonKey = (K) jsonSerialization.serialize(key);
-
-        JsonSerialization jsonSerialization2 = new JsonSerialization(getClassType(value));
-//        V jsonValue = (V) jsonSerialization2.serialize(value);
-        V oldValue = doGet(jsonSerialization.serialize(key));
-        jedis.set(jsonSerialization.serialize(key), jsonSerialization2.serialize(value));
+        V oldValue = doGet(redisSerializer.serialize(key));
+        jedis.set(redisSerializer.serialize(key),
+                redisSerializer.serialize(value));
         return oldValue;
     }
 
@@ -114,8 +111,7 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
 
     @Override
     protected V doRemove(K key) throws CacheException, ClassCastException {
-        JsonSerialization jsonSerialization = new JsonSerialization(getClassType(key));
-        byte[] keyBytes =jsonSerialization.serialize(key);
+        byte[] keyBytes = redisSerializer.serialize(key);
         V oldValue = doGet(keyBytes);
         jedis.del(keyBytes);
         return oldValue;
