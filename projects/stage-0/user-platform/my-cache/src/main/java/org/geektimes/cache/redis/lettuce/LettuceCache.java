@@ -1,5 +1,7 @@
 package org.geektimes.cache.redis.lettuce;
 
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisStringCommands;
 import org.geektimes.cache.AbstractCache;
 import org.geektimes.cache.serialization.RedisSerializer;
@@ -20,16 +22,16 @@ import java.util.Iterator;
  */
 public class LettuceCache<K extends Serializable, V extends Serializable> extends AbstractCache<K, V> {
 
-    private RedisStringCommands<K, V> redisStringCommands;
+    private RedisClient client;
 
     private final RedisSerializer redisSerializer = RedisSerializerFactory.getRedisSerializer();
 
     protected LettuceCache(CacheManager cacheManager,
                            String cacheName,
                            Configuration<K, V> configuration,
-                           RedisStringCommands<K, V> redisStringCommands) {
+                           RedisClient client) {
         super(cacheManager, cacheName, configuration);
-        this.redisStringCommands = redisStringCommands;
+        this.client = client;
     }
 
     @Override
@@ -44,17 +46,21 @@ public class LettuceCache<K extends Serializable, V extends Serializable> extend
     }
 
     protected V doGet(byte[] jsonKey) {
-        byte[] valueBytes = (byte[]) redisStringCommands.get((K) jsonKey);
+        StatefulRedisConnection<K,V> connection =(StatefulRedisConnection<K, V>) client.connect();
+        byte[] valueBytes = (byte[]) connection.sync().get((K) new String(jsonKey));
         V value = (V) redisSerializer.deserialize(valueBytes);
+        connection.close();
         return value;
     }
 
     @Override
     protected V doPut(K key, V value) throws CacheException, ClassCastException, IOException {
         V oldValue = doGet(redisSerializer.serialize(key));
-        redisStringCommands.set(
+        StatefulRedisConnection<K,V> connection =(StatefulRedisConnection<K, V>) client.connect();
+        connection.sync().set(
                 (K) redisSerializer.serialize(key),
                 (V) redisSerializer.serialize(value));
+        connection.close();
         return oldValue;
     }
 
