@@ -4,6 +4,7 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisStringCommands;
 import org.geektimes.cache.AbstractCache;
+import org.geektimes.cache.ExpirableEntry;
 import org.geektimes.cache.serialization.RedisSerializer;
 import org.geektimes.cache.serialization.RedisSerializerFactory;
 
@@ -13,6 +14,7 @@ import javax.cache.configuration.Configuration;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * @author KickEGG
@@ -34,19 +36,8 @@ public class LettuceCache<K extends Serializable, V extends Serializable> extend
         this.client = client;
     }
 
-    @Override
-    protected V doGet(K key) throws CacheException, ClassCastException {
-        byte[] jsonKey = null;
-        try {
-            jsonKey = redisSerializer.serialize(key);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return doGet(jsonKey);
-    }
-
     protected V doGet(byte[] jsonKey) {
-        StatefulRedisConnection<K,V> connection =(StatefulRedisConnection<K, V>) client.connect();
+        StatefulRedisConnection<K, V> connection = (StatefulRedisConnection<K, V>) client.connect();
         byte[] valueBytes = (byte[]) connection.sync().get((K) new String(jsonKey));
         V value = (V) redisSerializer.deserialize(valueBytes);
         connection.close();
@@ -54,28 +45,32 @@ public class LettuceCache<K extends Serializable, V extends Serializable> extend
     }
 
     @Override
-    protected V doPut(K key, V value) throws CacheException, ClassCastException, IOException {
-        V oldValue = doGet(redisSerializer.serialize(key));
-        StatefulRedisConnection<K,V> connection =(StatefulRedisConnection<K, V>) client.connect();
-        connection.sync().set(
-                (K) redisSerializer.serialize(key),
-                (V) redisSerializer.serialize(value));
-        connection.close();
-        return oldValue;
+    protected boolean containsEntry(K key) throws CacheException, ClassCastException {
+        return false;
     }
 
     @Override
-    protected V doRemove(K key) throws CacheException, ClassCastException {
+    protected ExpirableEntry<K, V> getEntry(K key) throws CacheException, ClassCastException {
         return null;
     }
 
     @Override
-    protected void doClear() throws CacheException {
+    protected void putEntry(ExpirableEntry<K, V> entry) throws CacheException, ClassCastException {
 
     }
 
     @Override
-    protected Iterator<Entry<K, V>> newIterator() {
+    protected ExpirableEntry<K, V> removeEntry(K key) throws CacheException, ClassCastException {
+        return null;
+    }
+
+    @Override
+    protected void clearEntries() throws CacheException {
+
+    }
+
+    @Override
+    protected Set<K> keySet() {
         return null;
     }
 }

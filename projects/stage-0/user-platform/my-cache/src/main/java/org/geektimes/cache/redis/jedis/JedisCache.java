@@ -1,23 +1,18 @@
-package org.geektimes.cache.redis.jedis;
+package org.geektimes.cache.redis;
 
 import org.geektimes.cache.AbstractCache;
-import org.geektimes.cache.serialization.RedisSerializer;
-import org.geektimes.cache.serialization.RedisSerializerFactory;
+import org.geektimes.cache.ExpirableEntry;
 import redis.clients.jedis.Jedis;
 
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
 import java.io.*;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Iterator;
+import java.util.Set;
 
 public class JedisCache<K extends Serializable, V extends Serializable> extends AbstractCache<K, V> {
 
     private final Jedis jedis;
-
-    private final RedisSerializer redisSerializer = RedisSerializerFactory.getRedisSerializer();
 
     public JedisCache(CacheManager cacheManager, String cacheName,
                       Configuration<K, V> configuration, Jedis jedis) {
@@ -25,102 +20,47 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
         this.jedis = jedis;
     }
 
-//    @Override
-//    protected V doGet(K key) throws CacheException, ClassCastException {
-//        byte[] keyBytes = serialize(key);
-//        return doGet(keyBytes);
-//    }
-
-//    @Override
-//    protected V doGet(K key) throws CacheException, ClassCastException {
-//        byte[] keyBytes = serialize(key);
-//        return doGet(keyBytes);
-//    }
-
     @Override
-    protected V doGet(K key) throws CacheException, ClassCastException {
-        byte[] jsonKey = null;
-        try {
-            jsonKey = redisSerializer.serialize(key);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return doGet(jsonKey);
-    }
-
-    protected V doGet(byte[] jsonKey) {
-        byte[] valueBytes = jedis.get(jsonKey);
-        V value = (V) redisSerializer.deserialize(valueBytes);
-        return value;
-    }
-
-//    protected V doGet(byte[] keyBytes) {
-//        byte[] valueBytes = jedis.get(keyBytes);
-//        V value = deserialize(valueBytes);
-//        return value;
-//    }
-
-//    @Override
-//    protected V doPut(K key, V value) throws CacheException, ClassCastException {
-//
-//        JsonSerialization jsonSerialization = new JsonSerialization();
-//        byte[] keyBytes = jsonSerialization.serialize(key);
-//        byte[] valueBytes = serialize(value);
-//        V oldValue = doGet(keyBytes);
-//        jedis.set(keyBytes, valueBytes);
-//        return oldValue;
-//    }
-
-    @Override
-    protected V doPut(K key, V value) throws CacheException, ClassCastException, IOException {
-        V oldValue = doGet(redisSerializer.serialize(key));
-        jedis.set(redisSerializer.serialize(key),
-                redisSerializer.serialize(value));
-        return oldValue;
-    }
-
-
-//    protected V doGet(String jsonKey) {
-//        String jsonValue = jedis.get(jsonKey);
-//        JsonSerialization jsonSerialization = new JsonSerialization();
-//        V value = null;
-//
-//        try {
-//            value = (V) jsonSerialization.deserialize(jsonValue);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return value;
-//    }
-
-    private Class getClassType(Object object) {
-        Type type = object.getClass().getGenericSuperclass(); // generic 泛型
-        if (type instanceof ParameterizedType) {
-            // 强制转化“参数化类型”
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            // 参数化类型中可能有多个泛型参数
-            Type[] types = parameterizedType.getActualTypeArguments();
-            // 获取数据的第一个元素(User.class)
-            return (Class<K>) types[0];
-        }
-        return null;
+    protected boolean containsEntry(K key) throws CacheException, ClassCastException {
+        byte[] keyBytes = serialize(key);
+        return jedis.exists(keyBytes);
     }
 
     @Override
-    protected V doRemove(K key) throws CacheException, ClassCastException {
-        byte[] keyBytes = redisSerializer.serialize(key);
-        V oldValue = doGet(keyBytes);
+    protected ExpirableEntry<K, V> getEntry(K key) throws CacheException, ClassCastException {
+        byte[] keyBytes = serialize(key);
+        return getEntry(keyBytes);
+    }
+
+    protected ExpirableEntry<K, V> getEntry(byte[] keyBytes) throws CacheException, ClassCastException {
+        byte[] valueBytes = jedis.get(keyBytes);
+        return ExpirableEntry.of(deserialize(keyBytes), deserialize(valueBytes));
+    }
+
+    @Override
+    protected void putEntry(ExpirableEntry<K, V> entry) throws CacheException, ClassCastException {
+        byte[] keyBytes = serialize(entry.getKey());
+        byte[] valueBytes = serialize(entry.getValue());
+        jedis.set(keyBytes, valueBytes);
+    }
+
+    @Override
+    protected ExpirableEntry<K, V> removeEntry(K key) throws CacheException, ClassCastException {
+        byte[] keyBytes = serialize(key);
+        ExpirableEntry<K, V> oldEntry = getEntry(keyBytes);
         jedis.del(keyBytes);
-        return oldValue;
+        return oldEntry;
     }
 
     @Override
-    protected void doClear() throws CacheException {
-
+    protected void clearEntries() throws CacheException {
+        // TODO
     }
 
+
     @Override
-    protected Iterator<Entry<K, V>> newIterator() {
+    protected Set<K> keySet() {
+        // TODO
         return null;
     }
 
@@ -129,7 +69,7 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
         this.jedis.close();
     }
 
-    // TODO 是否可以抽象出一套序列化和反序列化的 API
+    // 是否可以抽象出一套序列化和反序列化的 API
     private byte[] serialize(Object value) throws CacheException {
         byte[] bytes = null;
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -144,16 +84,16 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
         return bytes;
     }
 
-    private V deserialize(byte[] bytes) throws CacheException {
+    private <T> T deserialize(byte[] bytes) throws CacheException {
         if (bytes == null) {
             return null;
         }
-        V value = null;
+        T value = null;
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
              ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)
         ) {
             // byte[] -> Value
-            value = (V) objectInputStream.readObject();
+            value = (T) objectInputStream.readObject();
         } catch (Exception e) {
             throw new CacheException(e);
         }
