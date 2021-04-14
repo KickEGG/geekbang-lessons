@@ -38,7 +38,8 @@ public class JedisCache<K extends Serializable, V extends Serializable> extends 
 
     protected ExpirableEntry<K, V> getEntry(byte[] keyBytes) throws CacheException, ClassCastException {
         byte[] valueBytes = jedis.get(keyBytes);
-        return ExpirableEntry.of((K)redisSerializer.deserialize(keyBytes), (V)redisSerializer.deserialize(valueBytes));
+        return ExpirableEntry.of((K) redisSerializer.deserialize(keyBytes,valueBytes.getClass()),
+                (V) redisSerializer.deserialize(valueBytes,valueBytes.getClass()));
     }
 
     @Override

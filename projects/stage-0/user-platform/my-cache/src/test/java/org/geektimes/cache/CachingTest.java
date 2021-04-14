@@ -20,6 +20,7 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.geektimes.cache.event.TestCacheEntryListener;
+import org.geektimes.cache.redis.lettuce.LettuceCodec;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -136,7 +137,7 @@ public class CachingTest {
     }
 
     @Test
-    public void testSampleRedisByLuttuce() {
+    public void testSampleRedisByLettuce() {
         CachingProvider cachingProvider = Caching.getCachingProvider();
         CacheManager cacheManager = cachingProvider.getCacheManager(URI.create("redis://127.0.0.1:6379/"), null);
         // configure the cache
@@ -163,6 +164,26 @@ public class CachingTest {
         assertEquals(value1, value2);
         cache.remove(key);
         assertNull(cache.get(key));
+    }
+
+
+
+    @Test
+    public void testLettuceCodec() {
+        RedisClient redisClient = RedisClient.create("redis://localhost:6379/0");
+
+//        StatefulRedisConnection<String, String> connection = redisClient.connect(luttuceCodec);
+        StatefulRedisConnection connection = redisClient.connect(new LettuceCodec<>());
+        RedisCommands syncCommands = connection.sync();
+
+        syncCommands.set("keyLuttuceCodec2-1", "1");
+
+        System.out.println(syncCommands.get("keyLuttuceCodec2-1"));
+
+//        assertEquals("1",syncCommands.get("keyLuttuceCodec"));
+
+        connection.close();
+        redisClient.shutdown();
     }
 
     @Test

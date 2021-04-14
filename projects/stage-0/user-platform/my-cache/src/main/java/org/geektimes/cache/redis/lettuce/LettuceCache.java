@@ -2,7 +2,6 @@ package org.geektimes.cache.redis.lettuce;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisStringCommands;
 import org.geektimes.cache.AbstractCache;
 import org.geektimes.cache.ExpirableEntry;
 import org.geektimes.cache.serialization.RedisSerializer;
@@ -11,9 +10,7 @@ import org.geektimes.cache.serialization.RedisSerializerFactory;
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -26,7 +23,7 @@ public class LettuceCache<K extends Serializable, V extends Serializable> extend
 
     private RedisClient client;
 
-    private final RedisSerializer redisSerializer = RedisSerializerFactory.getRedisSerializer();
+    private final LettuceCodec<K, V> lettuceCodec = new LettuceCodec<K, V>();
 
     protected LettuceCache(CacheManager cacheManager,
                            String cacheName,
@@ -37,31 +34,47 @@ public class LettuceCache<K extends Serializable, V extends Serializable> extend
     }
 
     protected V doGet(byte[] jsonKey) {
-        StatefulRedisConnection<K, V> connection = (StatefulRedisConnection<K, V>) client.connect();
-        byte[] valueBytes = (byte[]) connection.sync().get((K) new String(jsonKey));
-        V value = (V) redisSerializer.deserialize(valueBytes);
+        StatefulRedisConnection connection = client.connect(lettuceCodec);
+        V value = (V) connection.sync().get(jsonKey);
         connection.close();
         return value;
     }
 
     @Override
     protected boolean containsEntry(K key) throws CacheException, ClassCastException {
-        return false;
+        StatefulRedisConnection connection = client.connect(lettuceCodec);
+        if (connection.sync().get(key) != null) {
+            connection.close();
+            return true;
+        } else {
+            connection.close();
+            return false;
+        }
     }
 
     @Override
     protected ExpirableEntry<K, V> getEntry(K key) throws CacheException, ClassCastException {
-        return null;
+        StatefulRedisConnection connection = client.connect(lettuceCodec);
+        V value = (V) connection.sync().get(key);
+        connection.close();
+        return ExpirableEntry.of((K) key,
+                (V) value);
     }
 
     @Override
     protected void putEntry(ExpirableEntry<K, V> entry) throws CacheException, ClassCastException {
-
+        StatefulRedisConnection connection = client.connect(lettuceCodec);
+        connection.sync().set(entry.getKey(), entry.getValue());
+        connection.close();
     }
 
     @Override
     protected ExpirableEntry<K, V> removeEntry(K key) throws CacheException, ClassCastException {
-        return null;
+        StatefulRedisConnection connection = client.connect(lettuceCodec);
+        ExpirableEntry<K, V> oldEntry = getEntry(key);
+        connection.sync().del(key);
+        connection.close();
+        return oldEntry;
     }
 
     @Override

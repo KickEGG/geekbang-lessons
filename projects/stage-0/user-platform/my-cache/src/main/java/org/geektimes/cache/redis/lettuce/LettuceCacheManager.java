@@ -46,7 +46,6 @@ public class LettuceCacheManager extends AbstractCacheManager {
 
     @Override
     protected <K, V, C extends Configuration<K, V>> Cache doCreateCache(String cacheName, C configuration) {
-//        StatefulRedisConnection<K, V> connection = (StatefulRedisConnection<K, V>) client.connect();
         return new LettuceCache(this, cacheName, configuration, client);
     }
 

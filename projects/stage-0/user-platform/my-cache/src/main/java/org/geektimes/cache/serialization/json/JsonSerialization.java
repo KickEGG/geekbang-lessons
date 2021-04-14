@@ -1,13 +1,11 @@
 package org.geektimes.cache.serialization.json;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-
 import org.geektimes.cache.serialization.RedisSerializer;
 
 import javax.cache.CacheException;
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
 import java.nio.charset.Charset;
 
 /**
@@ -19,16 +17,15 @@ import java.nio.charset.Charset;
 public class JsonSerialization<T> implements RedisSerializer<T> {
 
     private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-    private Class<T> clazz;
-
-    public JsonSerialization(Class<T> clazz) {
-        super();
-        this.clazz = clazz;
-    }
-
-    public JsonSerialization() {
-        super();
-    }
+//    private Class<T> clazz;
+//    public JsonSerialization(Class<T> clazz) {
+//        super();
+//        this.clazz = clazz;
+//    }
+//
+//    public JsonSerialization() {
+//        super();
+//    }
 
     @Override
     public byte[] serialize(T t) throws CacheException {
@@ -47,7 +44,7 @@ public class JsonSerialization<T> implements RedisSerializer<T> {
     }
 
     @Override
-    public <T> T deserialize(byte[] bytes) throws CacheException {
+    public <T> T deserialize(byte[] bytes,T t) throws CacheException {
         if (null == bytes || bytes.length <= 0) {
             return null;
         }
@@ -56,7 +53,7 @@ public class JsonSerialization<T> implements RedisSerializer<T> {
 
         try {
             String str = new String(bytes, DEFAULT_CHARSET);
-            value = (T) JSON.parseObject(str, clazz);
+            value = (T) JSON.parseObject(str, new TypeReference<T>(){});
         } catch (Exception e) {
             throw new CacheException(e);
         }
