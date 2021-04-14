@@ -2,6 +2,8 @@ package org.geektimes.cache.serialization;
 
 import com.sun.xml.internal.ws.encoding.soap.SerializationException;
 
+import javax.cache.CacheException;
+
 /**
  * @author KickEGG
  * @createTime 2021-04-10 9:33 上午
@@ -10,8 +12,8 @@ import com.sun.xml.internal.ws.encoding.soap.SerializationException;
  */
 public interface RedisSerializer<T> {
 
-    byte[] serialize(T t) throws SerializationException;
+    byte[] serialize(T t) throws CacheException;
 
-    T deserialize(byte[] bytes) throws SerializationException;
+    <T> T deserialize(byte[] bytes) throws CacheException;
 
 }

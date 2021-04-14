@@ -1,7 +1,6 @@
 package org.geektimes.cache.redis.jedis;
 
 import org.geektimes.cache.AbstractCacheManager;
-import org.geektimes.cache.redis.JedisCache;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 

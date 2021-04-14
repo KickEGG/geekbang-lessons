@@ -2,16 +2,19 @@ package org.geektimes.cache.serialization.json;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.sun.xml.internal.ws.encoding.soap.SerializationException;
+
 import org.geektimes.cache.serialization.RedisSerializer;
 
+import javax.cache.CacheException;
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.nio.charset.Charset;
 
 /**
  * @author KickEGG
  * @createTime 2021-04-09 8:30 下午
  * @description 参考redisTemplate实现
- * @keyPoint  org.geektimes.cache.serialization.RedisSerializer
+ * @keyPoint org.geektimes.cache.serialization.RedisSerializer
  */
 public class JsonSerialization<T> implements RedisSerializer<T> {
 
@@ -28,20 +31,35 @@ public class JsonSerialization<T> implements RedisSerializer<T> {
     }
 
     @Override
-    public byte[] serialize(T t) throws SerializationException {
+    public byte[] serialize(T t) throws CacheException {
         if (null == t) {
             return new byte[0];
         }
-        return JSON.toJSONString(t, SerializerFeature.WriteClassName).getBytes(DEFAULT_CHARSET);
+
+        byte[] value = null;
+
+        try {
+            value = JSON.toJSONString(t, SerializerFeature.WriteClassName).getBytes(DEFAULT_CHARSET);
+        } catch (Exception e) {
+            throw new CacheException(e);
+        }
+        return value;
     }
 
     @Override
-    public T deserialize(byte[] bytes) throws SerializationException {
+    public <T> T deserialize(byte[] bytes) throws CacheException {
         if (null == bytes || bytes.length <= 0) {
             return null;
         }
-        String str = new String(bytes, DEFAULT_CHARSET);
-        return (T) JSON.parseObject(str, clazz);
-    }
 
+        T value = null;
+
+        try {
+            String str = new String(bytes, DEFAULT_CHARSET);
+            value = (T) JSON.parseObject(str, clazz);
+        } catch (Exception e) {
+            throw new CacheException(e);
+        }
+        return value;
+    }
 }

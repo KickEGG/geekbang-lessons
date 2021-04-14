@@ -136,6 +136,36 @@ public class CachingTest {
     }
 
     @Test
+    public void testSampleRedisByLuttuce() {
+        CachingProvider cachingProvider = Caching.getCachingProvider();
+        CacheManager cacheManager = cachingProvider.getCacheManager(URI.create("redis://127.0.0.1:6379/"), null);
+        // configure the cache
+        MutableConfiguration<String, Integer> config =
+                new MutableConfiguration<String, Integer>()
+                        .setTypes(String.class, Integer.class);
+
+        // create the cache
+        Cache<String, Integer> cache = cacheManager.createCache("redisCache", config);
+
+        // add listener
+        cache.registerCacheEntryListener(cacheEntryListenerConfiguration(new TestCacheEntryListener<>()));
+
+        // cache operations
+        String key = "redis-key";
+        Integer value1 = 1;
+        cache.put(key, value1);
+
+        // update
+        value1 = 2;
+        cache.put(key, value1);
+
+        Integer value2 = cache.get(key);
+        assertEquals(value1, value2);
+        cache.remove(key);
+        assertNull(cache.get(key));
+    }
+
+    @Test
     public void testLettuce() {
         RedisClient redisClient = RedisClient.create("redis://localhost:6379/0");
         StatefulRedisConnection<String, String> connection = redisClient.connect();
