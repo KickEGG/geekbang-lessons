@@ -23,7 +23,7 @@ public class LettuceCodec<K, V> implements RedisCodec<K, V> {
         try {
             byte[] array = new byte[buffer.remaining()];
             buffer.get(array);
-            return (K) redisSerializer.deserialize(array, array.getClass());
+            return (K) redisSerializer.deserialize(array);
         } catch (Exception e) {
             return null;
         }
@@ -34,7 +34,7 @@ public class LettuceCodec<K, V> implements RedisCodec<K, V> {
         try {
             byte[] array = new byte[buffer.remaining()];
             buffer.get(array);
-            return (V) redisSerializer.deserialize(array, array.getClass());
+            return (V) redisSerializer.deserialize(array);
         } catch (Exception e) {
             return null;
         }

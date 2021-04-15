@@ -44,7 +44,7 @@ public class JsonSerialization<T> implements RedisSerializer<T> {
     }
 
     @Override
-    public <T> T deserialize(byte[] bytes,T t) throws CacheException {
+    public <T> T deserialize(byte[] bytes) throws CacheException {
         if (null == bytes || bytes.length <= 0) {
             return null;
         }

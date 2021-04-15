@@ -14,6 +14,6 @@ public interface RedisSerializer<T> {
 
     byte[] serialize(T t) throws CacheException;
 
-    <T> T deserialize(byte[] bytes,T t) throws CacheException;
+    <T> T deserialize(byte[] bytes) throws CacheException;
 
 }

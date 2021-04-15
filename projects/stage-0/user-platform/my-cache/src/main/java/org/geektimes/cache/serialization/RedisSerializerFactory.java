@@ -6,7 +6,7 @@ import java.util.ServiceLoader;
 /**
  * @author KickEGG
  * @createTime 2021-04-10 1:25 下午
- * @description
+ * @description spi RedisSerializer 实现
  * @keyPoint
  */
 public class RedisSerializerFactory<T> {
