@@ -46,7 +46,7 @@ import static org.junit.Assert.assertNull;
 public class CachingTest {
 
     @Test
-    public void testlLettuceSampleInMemory() {
+    public void testlInMemorySampleInMemory() {
         CachingProvider cachingProvider = Caching.getCachingProvider();
         CacheManager cacheManager = cachingProvider.getCacheManager(URI.create("in-memory://localhost/"), null);
         // configure the cache
