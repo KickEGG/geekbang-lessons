@@ -1,4 +1,4 @@
-package cn.edu.dgut.css.sai.springsecuritygiteeexperiment;
+package cn.kickegg.oauth2;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -27,7 +26,6 @@ import org.springframework.security.config.annotation.web.configurers.FormLoginC
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -128,16 +126,16 @@ public class SpringSecurityGiteeExperimentApplication {
             http
                     // 配置安全过滤链只拦载检查 '/admin/**' 的请求，并配置需要的权限。
                     .antMatcher("/admin/**")
-                        .authorizeRequests().anyRequest().hasAnyAuthority("ADMIN").and()
+                    .authorizeRequests().anyRequest().hasAnyAuthority("ADMIN").and()
                     // 自定义登录界面
                     .formLogin()
-                        .loginPage("/admin/login_backend").permitAll()
-                        // 设置默认身份认证成功后跳转的页面,即直接访问登录界面时，认证成功后跳转的页面。
-                        .defaultSuccessUrl("/admin").and()
+                    .loginPage("/admin/login_backend").permitAll()
+                    // 设置默认身份认证成功后跳转的页面,即直接访问登录界面时，认证成功后跳转的页面。
+                    .defaultSuccessUrl("/admin").and()
                     // 自定义退出登录请求Url、成功退出登录后的重定向Url
                     .logout()
-                        .logoutUrl("/admin/logout").permitAll()
-                        .logoutSuccessUrl("/admin/login_backend?logout");
+                    .logoutUrl("/admin/logout").permitAll()
+                    .logoutSuccessUrl("/admin/login_backend?logout");
 
         }
     }
@@ -186,23 +184,24 @@ public class SpringSecurityGiteeExperimentApplication {
             // 不指定path,本安全过滤链会匹配所有请求。
             http
                     .authorizeRequests()
-                        .antMatchers("/").permitAll()// 首页放行
-                        .anyRequest().hasAnyAuthority("USER").and()
+                    .antMatchers("/").permitAll()// 首页放行
+                    .anyRequest().hasAnyAuthority("USER").and()
                     .formLogin()
-                        .loginPage("/user/login_frontend").permitAll()
-                        .defaultSuccessUrl("/user").and()
+                    .loginPage("/user/login_frontend").permitAll()
+                    .defaultSuccessUrl("/user").and()
                     .logout()
-                        .logoutUrl("/user/logout").permitAll()
-                        .logoutSuccessUrl("/user/login_frontend?logout").and()
+                    .logoutUrl("/user/logout").permitAll()
+                    .logoutSuccessUrl("/user/login_frontend?logout").and()
                     // 自定义访问拒绝异常处理逻辑
                     .exceptionHandling().accessDeniedHandler(UserSecurityConfig::accessDeniedHandle)
                     ////////////////////////////////////////////////
                     /// 步骤六：把我们自定义的SecurityConfigurer应用到安全过滤链
-            .and()
-            .apply(new GiteeOAuth2LoginConfigurer<>())
+                    .and()
+                    .apply(new GiteeOAuth2LoginConfigurer<>())
             ;
             ////////////////////////////////////////////////
         }
+
         /**
          * @see AccessDeniedHandlerImpl#handle(HttpServletRequest, HttpServletResponse, AccessDeniedException)
          */
@@ -228,17 +227,18 @@ public class SpringSecurityGiteeExperimentApplication {
         /**
          * 获取登录用户的资料接口
          * <p></p>
+         *
          * @see Authentication
          * @see Principal
          * @see Model
          */
         @GetMapping("/user")
-        String userIndex(HttpServletRequest request,Model model) {
+        String userIndex(HttpServletRequest request, Model model) {
             ////////////////////////////////////
             /// 步骤七：改造/user接口，返回码云用户资料给前端；改造user.ftlh模板用于显示用户资料。
-           GiteeOAuth2LoginConfigurer.GiteeOAuth2LoginAuthenticationToken auth = (GiteeOAuth2LoginConfigurer.GiteeOAuth2LoginAuthenticationToken)request.getUserPrincipal();
-           String userName= auth.getName();
-           model.addAttribute("userName",userName);
+            GiteeOAuth2LoginConfigurer.GiteeOAuth2LoginAuthenticationToken auth = (GiteeOAuth2LoginConfigurer.GiteeOAuth2LoginAuthenticationToken) request.getUserPrincipal();
+            String userName = auth.getName();
+            model.addAttribute("userName", userName);
             return "user";
             ////////////////////////////////////
         }

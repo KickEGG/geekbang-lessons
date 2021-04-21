@@ -1,9 +1,8 @@
-package cn.edu.dgut.css.sai.springsecuritygiteeexperiment;
+package cn.kickegg.oauth2;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.json.JacksonJsonParser;
-import org.springframework.core.io.Resource;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -18,19 +17,15 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.DefaultRedirectStrategy;
-import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.RequestCacheAwareFilter;
@@ -38,14 +33,9 @@ import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -71,7 +61,8 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
     static final String CLIENT_ID = "3068627a904f5595362a180f242e4f603142fdbc1407599a25231c9571cb35c4";
     static final String CLIENT_SECRET = "7664a61c7b88560c96ccbbd145ef84a552888ab859c5065990e3b5ac667c7286";
     ///////////////////////////////////////////////////
-    protected  final    Logger logger= LoggerFactory.getLogger(GiteeOAuth2LoginConfigurer.class);
+    protected final Logger logger = LoggerFactory.getLogger(GiteeOAuth2LoginConfigurer.class);
+
     /**
      * 自定义安全过滤链
      *
@@ -85,8 +76,8 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
         ////////////////////////////////////////////////////////////////
         /// 步骤五：把自定义的两个Filter加进安全过滤链
         /// 注意：不要加在SecurityContextPersistenceFilter前面就行。
-        http.addFilterAfter((GiteeOAuth2RedirectFilter)this.postProcess(new GiteeOAuth2RedirectFilter()), SecurityContextPersistenceFilter.class);
-        http.addFilterAfter((GiteeOAuth2LoginAuthenticationFilter)this.postProcess(new GiteeOAuth2LoginAuthenticationFilter()),SecurityContextPersistenceFilter.class);
+        http.addFilterAfter((GiteeOAuth2RedirectFilter) this.postProcess(new GiteeOAuth2RedirectFilter()), SecurityContextPersistenceFilter.class);
+        http.addFilterAfter((GiteeOAuth2LoginAuthenticationFilter) this.postProcess(new GiteeOAuth2LoginAuthenticationFilter()), SecurityContextPersistenceFilter.class);
         ////////////////////////////////////////////////////////////////
     }
 
@@ -105,6 +96,7 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
          * <p></p>
          * 测试：http://localhost:8080/oauth2/gitee
          * <p></p>
+         *
          * @see UriComponentsBuilder
          * @see UriComponentsBuilder#buildAndExpand(Object...)
          * @see HttpServletResponse#sendRedirect(String)
@@ -122,12 +114,12 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
             // 重定向地址：https://gitee.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code
             /// 步骤二：编写重定向过滤器的业务逻辑。
             /// 当用户访问/oauth2/gitee时，本重定向过滤器拦截请求，并将用户重定向到码云三方认证页面上。
-            URI uri=UriComponentsBuilder
+            URI uri = UriComponentsBuilder
                     .fromUriString("https://gitee.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code")
-                    .build(CLIENT_ID,REDIRECT_URI,"code");
+                    .build(CLIENT_ID, REDIRECT_URI, "code");
             String redirectUrl = uri.toString();
-            logger.debug("redurectUrl:"+redirectUrl);
-            new DefaultRedirectStrategy().sendRedirect(request,response,redirectUrl);
+            logger.debug("redurectUrl:" + redirectUrl);
+            new DefaultRedirectStrategy().sendRedirect(request, response, redirectUrl);
             //////////////////////////////////////////////////////////////
         }
     }
@@ -177,13 +169,13 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
             // 校验成功，执行后面的流程：
             SecurityContextHolder.getContext().setAuthentication(successAuthentication);
             // 改变 session id (只是改id,没有删除session)
-            if(!request.getSession().getId().isEmpty()){
+            if (!request.getSession().getId().isEmpty()) {
                 request.changeSessionId();
             }
             // 移除之前认证时的错误信息
             request.getSession().removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
             // 成功登录后，设置重定向到页面。
-            redirectStrategy(request,response);
+            redirectStrategy(request, response);
         }
 
         /**
@@ -197,6 +189,7 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
          * Spring Security框架的默认的认证成功后的重定向逻辑由{@link SavedRequestAwareAuthenticationSuccessHandler}处理，
          * 本方法是根据它的逻辑写的，为了尽量与Spring Security兼容。
          * <p></p>
+         *
          * @see ExceptionTranslationFilter
          * @see RequestCache
          * @see HttpSessionRequestCache
@@ -208,8 +201,9 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
         private void redirectStrategy(HttpServletRequest request, HttpServletResponse response) throws IOException {
             String redirectUrl = DEFAULT_LOGIN_SUCCESS_REDIRECT_URL;
             SavedRequest savedRequest = (SavedRequest) request.getSession().getAttribute("SPRING_SECURITY_SAVED_REQUEST");
-            if (Objects.nonNull(savedRequest))
+            if (Objects.nonNull(savedRequest)) {
                 redirectUrl = savedRequest.getRedirectUrl();
+            }
             new DefaultRedirectStrategy().sendRedirect(request, response, redirectUrl);
         }
     }
@@ -241,12 +235,12 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
         /**
          * 获取码云API的访问令牌access_token
          * <p></p>
+         *
          * @see UriComponentsBuilder
          * @see UriComponentsBuilder#buildAndExpand(Object...)
          * @see RequestEntity
          * @see RestTemplate#exchange(RequestEntity, Class)
          * @see JacksonJsonParser
-         *
          */
         private String getAccessToken(String code) {
             ////////////////////////////////////////////////////
@@ -254,14 +248,14 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
             // 正确返回的access_token的json字符串：
             // {"access_token":"7282a1140867f6e3527f805af1950ea8","token_type":"bearer","expires_in":86400,"refresh_token":"0664cd3b66e36943b341285764a257ccfc7265a319dfcdd93c5f1bfbd4e023f1","scope":"user_info","created_at":1589124246}
             URI uri = UriComponentsBuilder.fromUriString(ACCESS_TOKEN_API_URI)
-                    .build(code,CLIENT_ID,REDIRECT_URI,CLIENT_SECRET);
+                    .build(code, CLIENT_ID, REDIRECT_URI, CLIENT_SECRET);
             RequestEntity<Void> requestEntity = RequestEntity
                     .post(uri)
                     .headers(httpHeaders -> httpHeaders.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"))
                     .build();
             ResponseEntity<String> jsonContent = rest.exchange(requestEntity, String.class);
-            Map<String,Object>  mapContent=new JacksonJsonParser().parseMap(jsonContent.getBody().toString());
-            System.out.println("accessToken:"+(String)mapContent.get("access_token"));
+            Map<String, Object> mapContent = new JacksonJsonParser().parseMap(jsonContent.getBody().toString());
+            System.out.println("accessToken:" + (String) mapContent.get("access_token"));
             return (String) mapContent.get("access_token");
             ////////////////////////////////////////////////////
         }
@@ -269,6 +263,7 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
         /**
          * 获取码云授权用户的信息
          * <p></p>
+         *
          * @see RequestEntity
          * @see RestTemplate#exchange(RequestEntity, Class)
          * @see JacksonJsonParser
@@ -286,8 +281,8 @@ public class GiteeOAuth2LoginConfigurer<H extends HttpSecurityBuilder<H>> extend
 
             ResponseEntity<String> jsonUserInfo = rest.exchange(requestEntity, String.class);
 
-            System.out.println("jsonUserInfo:"+jsonUserInfo.getBody());
-            Map<String,Object> userInfo = new JacksonJsonParser().parseMap(jsonUserInfo.getBody().toString());
+            System.out.println("jsonUserInfo:" + jsonUserInfo.getBody());
+            Map<String, Object> userInfo = new JacksonJsonParser().parseMap(jsonUserInfo.getBody().toString());
             return userInfo;
             ////////////////////////////////////////////////////
 
