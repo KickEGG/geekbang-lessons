@@ -18,7 +18,8 @@
         <module>my-rest-client</module>
         <module>my-reactive-messaging</module>
         <module>my-cache</module>
-        <module>gitee-oauth2</module>
+        <module>my-interceptor</module>
+        <module>user-data</module>
     </modules>
 
     <properties>
@@ -34,10 +35,12 @@
         <javax.inject.version>1</javax.inject.version>
         <javax.cdi-api.version>2.0</javax.cdi-api.version>
         <javax.cache-api.version>1.1.1</javax.cache-api.version>
+        <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
 
         <!-- MicroProfile 版本-->
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
+        <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
         <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
 
         <!-- 第三方开源依赖版本-->
@@ -50,18 +53,21 @@
         <hibernate.version>5.4.29.Final</hibernate.version>
         <hibernate.validator.version>5.4.3.Final</hibernate.validator.version>
         <glassfish-el.version>3.0.1-b08</glassfish-el.version>
-        <jackson.version>2.10.1</jackson.version>
+        <jackson.version>2.9.5</jackson.version>
         <activemq.version>5.9.1</activemq.version>
         <tomcat7.version>7.0.37</tomcat7.version>
         <lettuce.version>6.1.0.RELEASE</lettuce.version>
         <jedis.version>3.5.2</jedis.version>
+
+        <!-- Spring 依赖版本 -->
+        <spring-boot.version>2.4.5</spring-boot.version>
 
         <!-- Testing 版本 -->
         <junit.version>4.13</junit.version>
 
         <!-- Maven Plugins 版本 -->
         <maven.compiler.version>3.8.1</maven.compiler.version>
-        <maven.source.version>3.8.0</maven.source.version>
+        <maven.source.version>3.2.1</maven.source.version>
         <maven.jar.version>3.2.0</maven.jar.version>
         <maven.war.version>3.3.1</maven.war.version>
         <maven.deploy.version>2.8.2</maven.deploy.version>
@@ -76,6 +82,16 @@
     <dependencyManagement>
 
         <dependencies>
+
+            <!-- Spring Boot Dependencies -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Servlet 3.1 API -->
             <dependency>
                 <groupId>javax.servlet</groupId>
@@ -125,6 +141,13 @@
                 <version>${javax.cache-api.version}</version>
             </dependency>
 
+            <!-- Java Interceptor API -->
+            <dependency>
+                <groupId>javax.interceptor</groupId>
+                <artifactId>javax.interceptor-api</artifactId>
+                <version>${javax.interceptor-api.version}</version>
+            </dependency>
+
 
             <!-- MicroProfile -->
             <dependency>
@@ -137,6 +160,12 @@
                 <groupId>org.eclipse.microprofile.rest.client</groupId>
                 <artifactId>microprofile-rest-client-api</artifactId>
                 <version>${microprofile-rest-client-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.microprofile.fault-tolerance</groupId>
+                <artifactId>microprofile-fault-tolerance-api</artifactId>
+                <version>${microprofile-fault-tolerance-api.version}</version>
             </dependency>
 
             <dependency>
